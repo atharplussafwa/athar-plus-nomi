@@ -7,11 +7,14 @@ export default function BudgetPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [expenses, setExpenses] = useState<any[]>([])
-  const [totalBudget] = useState(5000)
+  const [totalBudget, setTotalBudget] = useState(0)
+  const [newBudget, setNewBudget] = useState('')
+  const [editingBudget, setEditingBudget] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ description: '', amount: '', category: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [budgetId, setBudgetId] = useState<string | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -21,9 +24,27 @@ export default function BudgetPage() {
     if (!user) { router.push('/'); return }
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(p)
+
+    const { data: b } = await supabase.from('budget').select('*').maybeSingle()
+    if (b) { setTotalBudget(b.total_amount || 0); setBudgetId(b.id) }
+
     const { data: exp } = await supabase.from('expenses').select('*').order('created_at', { ascending: false })
     setExpenses(exp || [])
     setLoading(false)
+  }
+
+  async function saveBudget() {
+    const supabase = createClient()
+    const amount = parseFloat(newBudget) || 0
+    if (budgetId) {
+      await supabase.from('budget').update({ total_amount: amount }).eq('id', budgetId)
+    } else {
+      const { data } = await supabase.from('budget').insert({ total_amount: amount, cycle_id: null }).select().single()
+      if (data) setBudgetId(data.id)
+    }
+    setTotalBudget(amount)
+    setEditingBudget(false)
+    setNewBudget('')
   }
 
   async function addExpense() {
@@ -52,7 +73,7 @@ export default function BudgetPage() {
 
   const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
   const remaining = totalBudget - totalExpenses
-  const usedPct = Math.min(Math.round((totalExpenses / totalBudget) * 100), 100)
+  const usedPct = totalBudget > 0 ? Math.min(Math.round((totalExpenses / totalBudget) * 100), 100) : 0
   const categories = ['الجائزة والدرع', 'المأدبة والحفل', 'الطباعة والتصميم', 'أخرى']
 
   if (loading) return <div className="flex items-center justify-center h-full"><p className="text-gray-400">جارٍ التحميل...</p></div>
@@ -60,11 +81,11 @@ export default function BudgetPage() {
   const isAdmin = profile?.role === 'admin'
 
   return (
-    <div className="p-7 max-w-3xl" dir="rtl">
+    <div className="p-4 md:p-7 max-w-3xl" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">الميزانية</h1>
-          <p className="text-sm text-gray-500 mt-1">الدورة الأولى — ملخص مالي</p>
+          <p className="text-sm text-gray-500 mt-1">ملخص مالي للدورة الحالية</p>
         </div>
         {isAdmin && (
           <button onClick={() => setShowForm(!showForm)}
@@ -74,36 +95,83 @@ export default function BudgetPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'الميزانية الإجمالية', value: totalBudget, sub: 'ريال' },
-          { label: 'المصروفات', value: totalExpenses, sub: 'ريال' },
-          { label: 'المتبقي', value: remaining, sub: 'ريال', color: remaining < 0 ? 'text-red-500' : 'text-emerald-500' },
-          { label: 'نسبة الصرف', value: usedPct + '%', sub: 'من الميزانية' },
-        ].map((m, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="text-xs text-gray-500 mb-1">{m.label}</div>
-            <div className={`text-2xl font-bold ${m.color || 'text-gray-900'}`}>
-              {typeof m.value === 'number' ? m.value.toLocaleString('ar-SA') : m.value}
-            </div>
-            <div className="text-xs text-gray-400 mt-1">{m.sub}</div>
+      {/* الميزانية الإجمالية */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">الميزانية الإجمالية</div>
+            {editingBudget && isAdmin ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={newBudget}
+                  onChange={e => setNewBudget(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-emerald-500 w-32"
+                  placeholder="0"
+                  autoFocus
+                />
+                <button onClick={saveBudget}
+                  className="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-emerald-600 transition">
+                  حفظ
+                </button>
+                <button onClick={() => setEditingBudget(false)}
+                  className="text-gray-400 text-sm px-2 py-1.5">
+                  إلغاء
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-bold text-gray-900">
+                  {totalBudget > 0 ? totalBudget.toLocaleString('ar-SA') : '—'}
+                </div>
+                <span className="text-gray-400 text-sm">ريال</span>
+                {isAdmin && (
+                  <button onClick={() => { setEditingBudget(true); setNewBudget(totalBudget.toString()) }}
+                    className="text-xs text-emerald-500 border border-emerald-200 px-2 py-1 rounded-lg hover:bg-emerald-50 transition">
+                    تعديل
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        ))}
+        </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
-        <div className="flex justify-between text-xs text-gray-500 mb-2">
-          <span>المصروف: {totalExpenses.toLocaleString('ar-SA')} ريال</span>
-          <span>المتبقي: {remaining.toLocaleString('ar-SA')} ريال</span>
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="text-xs text-gray-500 mb-1">المصروفات</div>
+          <div className="text-xl font-bold text-gray-900">{totalExpenses.toLocaleString('ar-SA')}</div>
+          <div className="text-xs text-gray-400 mt-1">ريال</div>
         </div>
-        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${usedPct > 90 ? 'bg-red-400' : 'bg-emerald-400'}`}
-            style={{ width: `${usedPct}%` }}></div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="text-xs text-gray-500 mb-1">المتبقي</div>
+          <div className={`text-xl font-bold ${remaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+            {remaining.toLocaleString('ar-SA')}
+          </div>
+          <div className="text-xs text-gray-400 mt-1">ريال</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-4">
+          <div className="text-xs text-gray-500 mb-1">نسبة الصرف</div>
+          <div className="text-xl font-bold text-gray-900">{usedPct}%</div>
+          <div className="text-xs text-gray-400 mt-1">من الميزانية</div>
         </div>
       </div>
+
+      {totalBudget > 0 && (
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
+          <div className="flex justify-between text-xs text-gray-500 mb-2">
+            <span>المصروف: {totalExpenses.toLocaleString('ar-SA')} ريال</span>
+            <span>المتبقي: {remaining.toLocaleString('ar-SA')} ريال</span>
+          </div>
+          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${usedPct > 90 ? 'bg-red-400' : 'bg-emerald-400'}`}
+              style={{ width: `${usedPct}%` }}></div>
+          </div>
+        </div>
+      )}
 
       {showForm && isAdmin && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4">
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">البند</label>
