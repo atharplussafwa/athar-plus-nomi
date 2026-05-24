@@ -23,12 +23,28 @@ const MEMBER_NAV = [
   { section: 'عام' },
   { id: 'dashboard', icon: '🏠', label: 'لوحة التحكم' },
   { section: 'مشاركتي' },
-  { id: 'nominations', icon: '📝', label: 'تقديم ترشيح' },
+  { id: 'nominations', icon: '📝', label: 'ترشيح' },
   { id: 'voting', icon: '🗳', label: 'التصويت' },
-  { id: 'awards', icon: '🏆', label: 'اختيار الجائزة' },
+  { id: 'awards', icon: '🏆', label: 'الجائزة' },
   { section: 'المالية' },
-  { id: 'contribution', icon: '💰', label: 'مساهمتي' },
+  { id: 'contribution', icon: '💰', label: 'القطة' },
   { id: 'budget', icon: '📊', label: 'الميزانية' },
+]
+
+const BOTTOM_NAV_ADMIN = [
+  { id: 'dashboard', icon: '🏠', label: 'الرئيسية' },
+  { id: 'nominations', icon: '📝', label: 'الترشيحات' },
+  { id: 'voting', icon: '🗳', label: 'التصويت' },
+  { id: 'awards', icon: '🏆', label: 'الجائزة' },
+  { id: 'members', icon: '👥', label: 'الأعضاء' },
+]
+
+const BOTTOM_NAV_MEMBER = [
+  { id: 'dashboard', icon: '🏠', label: 'الرئيسية' },
+  { id: 'nominations', icon: '📝', label: 'ترشيح' },
+  { id: 'voting', icon: '🗳', label: 'التصويت' },
+  { id: 'awards', icon: '🏆', label: 'الجائزة' },
+  { id: 'contribution', icon: '💰', label: 'القطة' },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -36,6 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [profile, setProfile] = useState<any>(null)
   const [cycleLabel, setCycleLabel] = useState('...')
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function loadSettings() {
     const supabase = createClient()
@@ -61,6 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     loadSettings()
+    setMenuOpen(false)
   }, [pathname])
 
   async function handleSignOut() {
@@ -70,11 +88,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const nav = profile?.role === 'admin' ? ADMIN_NAV : MEMBER_NAV
+  const bottomNav = profile?.role === 'admin' ? BOTTOM_NAV_ADMIN : BOTTOM_NAV_MEMBER
   const initials = profile?.name?.split(' ').slice(0, 2).map((w: string) => w[0]).join('') || '؟'
+
+  function goTo(id: string) {
+    router.push(`/dashboard${id === 'dashboard' ? '' : '/' + id}`)
+  }
+
+  function isActive(id: string) {
+    return pathname === `/dashboard${id === 'dashboard' ? '' : '/' + id}`
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50" dir="rtl">
-      <div className="w-56 flex-shrink-0 bg-white border-l border-gray-200 flex flex-col">
+
+      {/* Sidebar — desktop only */}
+      <div className="hidden md:flex w-56 flex-shrink-0 bg-white border-l border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">أ+</div>
@@ -82,7 +111,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">{cycleLabel}</div>
         </div>
-
         <div className="p-3 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">{initials}</div>
@@ -92,26 +120,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </div>
-
         <nav className="flex-1 p-2 overflow-y-auto">
           {nav.map((item: any, i) =>
             item.section ? (
-              <div key={i} className="text-xs text-gray-400 px-2 pt-3 pb-1 font-semibold uppercase tracking-wide">{item.section}</div>
+              <div key={i} className="text-xs text-gray-400 px-2 pt-3 pb-1 font-semibold">{item.section}</div>
             ) : (
-              <div
-                key={item.id}
-                onClick={() => router.push(`/dashboard${item.id === 'dashboard' ? '' : '/' + item.id}`)}
+              <div key={item.id} onClick={() => goTo(item.id)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm mb-0.5 transition
-                  ${pathname === `/dashboard${item.id === 'dashboard' ? '' : '/' + item.id}`
-                    ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                    : 'text-gray-600 hover:bg-gray-50'}`}
-              >
+                  ${isActive(item.id) ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <span>{item.icon}</span>{item.label}
               </div>
             )
           )}
         </nav>
-
         <div className="p-3 border-t border-gray-200">
           <button onClick={handleSignOut} className="w-full text-sm text-gray-500 border border-gray-200 rounded-lg py-2 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
             ⬅ تسجيل الخروج
@@ -119,8 +140,76 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {children}
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Mobile header */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">أ+</div>
+            <div>
+              <div className="text-sm font-bold text-gray-900">أثر<span className="text-emerald-500">+</span></div>
+              <div className="text-xs text-gray-400">{cycleLabel}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">{initials}</div>
+            <button onClick={() => setMenuOpen(!menuOpen)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200">
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile full menu */}
+        {menuOpen && (
+          <div className="md:hidden absolute inset-0 z-50 bg-white pt-16 px-4 overflow-y-auto">
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl mb-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">{initials}</div>
+              <div>
+                <div className="font-semibold text-gray-900">{profile?.name}</div>
+                <div className="text-xs text-gray-400">{profile?.role === 'admin' ? 'مدير النظام' : 'عضو المجلس'}</div>
+              </div>
+            </div>
+            {nav.map((item: any, i) =>
+              item.section ? (
+                <div key={i} className="text-xs text-gray-400 px-2 pt-4 pb-1 font-semibold uppercase">{item.section}</div>
+              ) : (
+                <div key={item.id} onClick={() => goTo(item.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-base mb-1 transition
+                    ${isActive(item.id) ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <span className="text-xl">{item.icon}</span>{item.label}
+                </div>
+              )
+            )}
+            <div className="mt-4 pb-8">
+              <button onClick={handleSignOut}
+                className="w-full text-sm text-red-500 border border-red-200 rounded-xl py-3 hover:bg-red-50 transition">
+                ⬅ تسجيل الخروج
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Page content */}
+        <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          {children}
+        </div>
+
+        {/* Bottom nav — mobile only */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+          <div className="flex">
+            {bottomNav.map((item: any) => (
+              <button key={item.id} onClick={() => goTo(item.id)}
+                className={`flex-1 flex flex-col items-center py-2 text-xs transition
+                  ${isActive(item.id) ? 'text-emerald-600' : 'text-gray-400'}`}>
+                <span className="text-xl mb-0.5">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   )
