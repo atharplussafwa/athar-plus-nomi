@@ -50,6 +50,13 @@ export default function NominationsPage() {
     load()
   }
 
+  async function deleteNomination(id: string) {
+    if (!confirm("هل أنت متأكد من حذف هذا الترشيح نهائياً؟")) return
+    const supabase = createClient()
+    await supabase.from("nominations").delete().eq("id", id)
+    load()
+  }
+
   async function updateStatus(id: string, status: string) {
     const supabase = createClient()
     await supabase.from('nominations').update({ status }).eq('id', id)
@@ -160,11 +167,12 @@ export default function NominationsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {profile?.role === 'admin' && n.status === 'pending' ? (
-                    <div className="flex gap-2">
+                  {profile?.role === 'admin' ? (
+                    <div className="flex gap-2 flex-wrap">
                       <button onClick={() => updateStatus(n.id, 'shortlisted')} className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition">إضافة للقائمة</button>
                       <button onClick={() => updateStatus(n.id, 'approved')} className="text-xs px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 transition">اعتماد</button>
                       <button onClick={() => updateStatus(n.id, 'rejected')} className="text-xs px-2 py-1 bg-red-50 text-red-500 rounded hover:bg-red-100 transition">رفض</button>
+                      <button onClick={() => deleteNomination(n.id)} className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition">حذف</button>
                     </div>
                   ) : (
                     <span className="text-xs text-gray-400">—</span>

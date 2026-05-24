@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">أ+</div>
             <span className="text-lg font-bold text-gray-900">أثر<span className="text-emerald-500">+</span></span>
           </div>
-          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">الدورة الأولى — Q1 2025</div>
+          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">الدورة الأولى — Q2 2026</div>
         </div>
 
         <div className="p-3 border-b border-gray-200">
