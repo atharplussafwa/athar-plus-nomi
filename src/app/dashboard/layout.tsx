@@ -35,6 +35,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [profile, setProfile] = useState<any>(null)
+  const [cycleLabel, setCycleLabel] = useState('...')
+
+  async function loadSettings() {
+    const supabase = createClient()
+    const { data } = await supabase.from('settings').select('*')
+    if (data) {
+      const map: any = {}
+      data.forEach((row: any) => { map[row.key] = row.value })
+      setCycleLabel(`${map.cycle_name} — Q${map.cycle_quarter} ${map.cycle_year}`)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -45,7 +56,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setProfile(data)
     }
     load()
+    loadSettings()
   }, [])
+
+  useEffect(() => {
+    loadSettings()
+  }, [pathname])
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -53,34 +69,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/')
   }
 
-  const [cycleLabel, setCycleLabel] = useState('جارٍ التحميل...')
-
-  useEffect(() => {
-    async function loadSettings() {
-      const supabase = createClient()
-      const { data } = await supabase.from('settings').select('*')
-      if (data) {
-        const map: any = {}
-        data.forEach((row: any) => { map[row.key] = row.value })
-        setCycleLabel(`${map.cycle_name} — Q${map.cycle_quarter} ${map.cycle_year}`)
-      }
-    }
-    loadSettings()
-  }, [])
-
   const nav = profile?.role === 'admin' ? ADMIN_NAV : MEMBER_NAV
   const initials = profile?.name?.split(' ').slice(0, 2).map((w: string) => w[0]).join('') || '؟'
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50" dir="rtl">
-      {/* Sidebar */}
       <div className="w-56 flex-shrink-0 bg-white border-l border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">أ+</div>
             <span className="text-lg font-bold text-gray-900">أثر<span className="text-emerald-500">+</span></span>
           </div>
-          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">جارٍ التحميل...</div>
+          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">{cycleLabel}</div>
         </div>
 
         <div className="p-3 border-b border-gray-200">
@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ) : (
               <div
                 key={item.id}
-                onClick={() => router.push(`/dashboard/${item.id === 'dashboard' ? '' : item.id}`)}
+                onClick={() => router.push(`/dashboard${item.id === 'dashboard' ? '' : '/' + item.id}`)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm mb-0.5 transition
                   ${pathname === `/dashboard${item.id === 'dashboard' ? '' : '/' + item.id}`
                     ? 'bg-emerald-50 text-emerald-700 font-semibold'
@@ -119,7 +119,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* Main */}
       <div className="flex-1 overflow-y-auto">
         {children}
       </div>
