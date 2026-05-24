@@ -7,6 +7,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [stats, setStats] = useState({ nominations: 0, shortlisted: 0, votes: 0, willing: 0 })
+  const [cycleLabel, setCycleLabel] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,19 +20,21 @@ export default function DashboardPage() {
         .from('profiles').select('*').eq('id', user.id).single()
       setProfile(profileData)
 
+      const { data: s } = await supabase.from('settings').select('*')
+      if (s) {
+        const map: any = {}
+        s.forEach((row: any) => { map[row.key] = row.value })
+        setCycleLabel(`${map.cycle_name} — الربع ${map.cycle_quarter === '1' ? 'الأول' : map.cycle_quarter === '2' ? 'الثاني' : map.cycle_quarter === '3' ? 'الثالث' : 'الرابع'} ${map.cycle_year}`)
+      }
+
       const { count: nomCount } = await supabase
         .from('nominations').select('*', { count: 'exact', head: true })
-
       const { count: shortCount } = await supabase
-        .from('nominations').select('*', { count: 'exact', head: true })
-        .eq('status', 'shortlisted')
-
+        .from('nominations').select('*', { count: 'exact', head: true }).eq('status', 'shortlisted')
       const { count: voteCount } = await supabase
         .from('honoree_votes').select('*', { count: 'exact', head: true })
-
       const { count: willingCount } = await supabase
-        .from('contribution_intents').select('*', { count: 'exact', head: true })
-        .eq('is_willing', true)
+        .from('contribution_intents').select('*', { count: 'exact', head: true }).eq('is_willing', true)
 
       setStats({
         nominations: nomCount || 0,
@@ -56,10 +59,9 @@ export default function DashboardPage() {
     <div className="p-7 max-w-4xl" dir="rtl">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">لوحة التحكم</h1>
-        <p className="text-sm text-gray-500 mt-1">الدورة الأولى — الربع الأول 2025</p>
+        <p className="text-sm text-gray-500 mt-1">{cycleLabel}</p>
       </div>
 
-      {/* مراحل الدورة */}
       <div className="flex rounded-lg overflow-hidden border border-gray-200 mb-6">
         {[
           { n: '1', l: 'الترشيح', s: 'done' },
@@ -78,7 +80,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* الإحصائيات */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
           { label: 'الترشيحات', value: stats.nominations, sub: 'مقدمة' },
@@ -94,7 +95,6 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* تنبيهات */}
       <div className="bg-white border border-gray-200 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-3">التنبيهات</h2>
         <div className="space-y-2">
