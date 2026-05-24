@@ -138,7 +138,7 @@ export default function ContributionPage() {
               <div className="text-xs text-gray-400 mt-1">عضو</div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
-              <div class="text-xs text-gray-500 mb-1">إجمالي المصروف</div>
+              <div className="text-xs text-gray-500 mb-1">إجمالي المصروف</div>
               <div className="text-2xl font-bold text-gray-900">{parseFloat(totalSpent) > 0 ? parseFloat(totalSpent).toLocaleString('ar-SA') : '—'}</div>
               <div className="text-xs text-gray-400 mt-1">ريال</div>
             </div>
