@@ -15,6 +15,7 @@ const ADMIN_NAV = [
   { id: 'contribution', icon: '💰', label: 'القطة' },
   { id: 'budget', icon: '📊', label: 'الميزانية' },
   { section: 'الإدارة' },
+  { id: 'settings', icon: '⚙️', label: 'الإعدادات' },
   { id: 'members', icon: '👥', label: 'الأعضاء' },
 ]
 
@@ -52,6 +53,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/')
   }
 
+  const [cycleLabel, setCycleLabel] = useState(cycleLabel)
+
+  useEffect(() => {
+    async function loadSettings() {
+      const supabase = createClient()
+      const { data } = await supabase.from('settings').select('*')
+      if (data) {
+        const map: any = {}
+        data.forEach((row: any) => { map[row.key] = row.value })
+        setCycleLabel(`${map.cycle_name} — Q${map.cycle_quarter} ${map.cycle_year}`)
+      }
+    }
+    loadSettings()
+  }, [])
+
   const nav = profile?.role === 'admin' ? ADMIN_NAV : MEMBER_NAV
   const initials = profile?.name?.split(' ').slice(0, 2).map((w: string) => w[0]).join('') || '؟'
 
@@ -64,7 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">أ+</div>
             <span className="text-lg font-bold text-gray-900">أثر<span className="text-emerald-500">+</span></span>
           </div>
-          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">الدورة الأولى — Q2 2026</div>
+          <div className="mt-2 text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full inline-block">جارٍ التحميل...</div>
         </div>
 
         <div className="p-3 border-b border-gray-200">
