@@ -71,10 +71,10 @@ export default function ContributionPage() {
   const isAdmin = profile?.role === 'admin'
 
   return (
-    <div className="p-7 max-w-2xl" dir="rtl">
+    <div className="p-4 md:p-7 max-w-2xl" dir="rtl">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900">المساهمة في القطة</h1>
-        <p className="text-sm text-gray-500 mt-1">اختياري وسري تماماً — الربع الأول 2025</p>
+        <p className="text-sm text-gray-500 mt-1">اختياري وسري تماماً</p>
       </div>
 
       {!isAdmin && (
@@ -82,13 +82,14 @@ export default function ContributionPage() {
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-5 text-sm text-blue-700">
             🔒 رغبتك في المساهمة لا تظهر لأي عضو آخر. بعد الحفل سيُقسَّم إجمالي المصروف على المتطوعين.
           </div>
+
           {intent === null ? (
             <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
               <div className="text-4xl mb-4 text-emerald-400">♡</div>
               <h2 className="text-lg font-bold text-gray-900 mb-2">هل تودّ المساهمة في تكريم المنجز؟</h2>
               <p className="text-sm text-gray-500 mb-2">لا يُطلب منك تحديد مبلغ الآن.</p>
               <p className="text-sm text-gray-500 mb-6">بعد انتهاء الحفل سيقوم المدير بحساب إجمالي المصروف وتقسيمه بالتساوي على من أبدى استعداده.</p>
-              <div className="flex gap-3 justify-center">
+              <div className="flex gap-3 justify-center flex-wrap">
                 <button onClick={() => submitIntent(true)} disabled={submitting}
                   className="bg-emerald-500 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition disabled:opacity-50">
                   ✓ نعم، أودّ المساهمة
@@ -133,13 +134,15 @@ export default function ContributionPage() {
           <h2 className="text-sm font-semibold text-gray-900 mb-4">لوحة القطة — للمدير فقط</h2>
           <div className="grid grid-cols-3 gap-3 mb-5">
             <div className="bg-gray-50 rounded-xl p-4">
-              <div className="text-xs text-gray-500 mb-1">المتطوعون للمساهمة</div>
+              <div className="text-xs text-gray-500 mb-1">المتطوعون</div>
               <div className="text-2xl font-bold text-gray-900">{willingCount}</div>
               <div className="text-xs text-gray-400 mt-1">عضو</div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="text-xs text-gray-500 mb-1">إجمالي المصروف</div>
-              <div className="text-2xl font-bold text-gray-900">{parseFloat(totalSpent) > 0 ? parseFloat(totalSpent).toLocaleString('ar-SA') : '—'}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {parseFloat(totalSpent) > 0 ? parseFloat(totalSpent).toLocaleString('ar-SA') : '—'}
+              </div>
               <div className="text-xs text-gray-400 mt-1">ريال</div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
@@ -150,9 +153,20 @@ export default function ContributionPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">أدخل إجمالي المصروف بعد الحفل (ريال)</label>
-            <input type="number" value={totalSpent} onChange={e => setTotalSpent(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-              placeholder="0" />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={totalSpent}
+                onChange={e => setTotalSpent(e.target.value)}
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                placeholder="0"
+              />
+              <button
+                onClick={() => setTotalSpent(totalSpent)}
+                className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
+                احسب
+              </button>
+            </div>
             {parseFloat(totalSpent) > 0 && willingCount > 0 && (
               <div className="mt-3 bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-sm text-emerald-700">
                 {parseFloat(totalSpent).toLocaleString('ar-SA')} ريال ÷ {willingCount} متطوع = <strong>{calcPerPerson()} ريال</strong> على كل مساهم
