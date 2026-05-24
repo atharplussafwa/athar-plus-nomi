@@ -102,7 +102,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50" dir="rtl">
 
-      {/* Sidebar — desktop only */}
       <div className="hidden md:flex w-56 flex-shrink-0 bg-white border-l border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
@@ -140,10 +139,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
 
-        {/* Mobile header */}
         <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs">أ+</div>
@@ -161,42 +158,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Mobile full menu */}
         {menuOpen && (
-          <div className="md:hidden absolute inset-0 z-50 bg-white pt-16 px-4 overflow-y-auto">
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl mb-4">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">{initials}</div>
-              <div>
-                <div className="font-semibold text-gray-900">{profile?.name}</div>
-                <div className="text-xs text-gray-400">{profile?.role === 'admin' ? 'مدير النظام' : 'عضو المجلس'}</div>
-              </div>
-            </div>
-            {nav.map((item: any, i) =>
-              item.section ? (
-                <div key={i} className="text-xs text-gray-400 px-2 pt-4 pb-1 font-semibold uppercase">{item.section}</div>
-              ) : (
-                <div key={item.id} onClick={() => goTo(item.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-base mb-1 transition
-                    ${isActive(item.id) ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
-                  <span className="text-xl">{item.icon}</span>{item.label}
+          <div className="md:hidden fixed inset-0 z-50 bg-white overflow-y-auto" style={{paddingTop:'60px'}}>
+            <div className="px-4">
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl mb-4">
+                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">{initials}</div>
+                <div>
+                  <div className="font-semibold text-gray-900">{profile?.name}</div>
+                  <div className="text-xs text-gray-400">{profile?.role === 'admin' ? 'مدير النظام' : 'عضو المجلس'}</div>
                 </div>
-              )
-            )}
-            <div className="mt-4 pb-8">
-              <button onClick={handleSignOut}
-                className="w-full text-sm text-red-500 border border-red-200 rounded-xl py-3 hover:bg-red-50 transition">
-                ⬅ تسجيل الخروج
-              </button>
+              </div>
+              {nav.map((item: any, i) =>
+                item.section ? (
+                  <div key={i} className="text-xs text-gray-400 px-2 pt-4 pb-1 font-semibold">{item.section}</div>
+                ) : (
+                  <div key={item.id} onClick={() => goTo(item.id)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-base mb-1 transition
+                      ${isActive(item.id) ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}>
+                    <span className="text-xl">{item.icon}</span>{item.label}
+                  </div>
+                )
+              )}
+              <div className="mt-4 pb-8">
+                <button onClick={handleSignOut}
+                  className="w-full text-sm text-red-500 border border-red-200 rounded-xl py-3 hover:bg-red-50 transition">
+                  ⬅ تسجيل الخروج
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Page content */}
         <div className="flex-1 overflow-y-auto pb-20 md:pb-0">
           {children}
         </div>
 
-        {/* Bottom nav — mobile only */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
           <div className="flex">
             {bottomNav.map((item: any) => (
