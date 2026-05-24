@@ -94,10 +94,10 @@ export default function NominationsPage() {
           <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 mb-4">
             <div className="text-sm font-semibold text-emerald-700 mb-2">معايير الترشيح</div>
             <div className="grid grid-cols-2 gap-2 text-xs text-emerald-600">
-              <div className="bg-white rounded px-2 py-1">✓ الأثر الإيجابي على المجتمع</div>
-              <div className="bg-white rounded px-2 py-1">✓ التميز والتفرد في المجال</div>
-              <div className="bg-white rounded px-2 py-1">✓ الاستمرارية والثبات</div>
-              <div className="bg-white rounded px-2 py-1">✓ القدوة والإلهام للآخرين</div>
+              <div className="bg-white rounded px-2 py-1">✓ أن يكون المرشح من مدينة صفوى</div>
+              <div className="bg-white rounded px-2 py-1">✓ أن يكون من فئة الشباب</div>
+              <div className="bg-white rounded px-2 py-1">✓ إنجاز على المستوى الوطني أو الدولي</div>
+              <div className="bg-white rounded px-2 py-1">✓ القدوة والإلهام للشباب</div>
             </div>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
