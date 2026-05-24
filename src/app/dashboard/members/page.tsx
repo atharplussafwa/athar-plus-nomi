@@ -13,6 +13,7 @@ export default function MembersPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'member' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   useEffect(() => { load() }, [])
 
@@ -28,14 +29,35 @@ export default function MembersPage() {
     setLoading(false)
   }
 
+  async function createMember() {
+    if (!form.name || !form.email || !form.password) {
+      setError('يرجى تعبئة جميع الحقول'); return
+    }
+    setSubmitting(true)
+    setError('')
+    const res = await fetch('/api/create-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    })
+    const data = await res.json()
+    if (data.error) {
+      setError(data.error)
+    } else {
+      setSuccess('تم إضافة العضو بنجاح')
+      setForm({ name: '', email: '', password: '', role: 'member' })
+      setShowForm(false)
+      setTimeout(() => setSuccess(''), 3000)
+      load()
+    }
+    setSubmitting(false)
+  }
+
   async function updateMember() {
     if (!editMember) return
     setSubmitting(true)
     const supabase = createClient()
-    await supabase.from('profiles').update({
-      name: form.name,
-      role: form.role
-    }).eq('id', editMember.id)
+    await supabase.from('profiles').update({ name: form.name, role: form.role }).eq('id', editMember.id)
     setEditMember(null)
     setShowForm(false)
     setSubmitting(false)
@@ -49,11 +71,18 @@ export default function MembersPage() {
     load()
   }
 
+  function openAdd() {
+    setEditMember(null)
+    setForm({ name: '', email: '', password: '', role: 'member' })
+    setError('')
+    setShowForm(true)
+  }
+
   function openEdit(m: any) {
     setEditMember(m)
     setForm({ name: m.name, email: m.email || '', password: '', role: m.role })
-    setShowForm(true)
     setError('')
+    setShowForm(true)
   }
 
   function getInitials(name: string) {
@@ -69,19 +98,29 @@ export default function MembersPage() {
           <h1 className="text-xl font-bold text-gray-900">إدارة الأعضاء</h1>
           <p className="text-sm text-gray-500 mt-1">{members.length} عضو مسجل</p>
         </div>
-        <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 text-xs text-amber-600">
-          لإضافة عضو جديد: أنشئه من Supabase Authentication
-        </div>
+        <button onClick={openAdd}
+          className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
+          + إضافة عضو
+        </button>
       </div>
 
-      {showForm && editMember && (
+      {success && (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 mb-4 text-sm text-emerald-700">
+          ✓ {success}
+        </div>
+      )}
+
+      {showForm && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">تعديل بيانات العضو</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">
+            {editMember ? 'تعديل بيانات العضو' : 'إضافة عضو جديد'}
+          </h2>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">الاسم</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">الاسم الكامل</label>
               <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500" />
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                placeholder="الاسم الرباعي" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">الدور</label>
@@ -92,13 +131,29 @@ export default function MembersPage() {
               </select>
             </div>
           </div>
+          {!editMember && (
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
+                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  placeholder="email@example.com" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">كلمة المرور</label>
+                <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  placeholder="••••••••" />
+              </div>
+            </div>
+          )}
           {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
           <div className="flex justify-end gap-2">
             <button onClick={() => { setShowForm(false); setEditMember(null) }}
               className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">إلغاء</button>
-            <button onClick={updateMember} disabled={submitting}
+            <button onClick={editMember ? updateMember : createMember} disabled={submitting}
               className="px-4 py-2 text-sm bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50">
-              {submitting ? 'جارٍ الحفظ...' : 'حفظ'}
+              {submitting ? 'جارٍ الحفظ...' : editMember ? 'حفظ' : 'إضافة'}
             </button>
           </div>
         </div>
@@ -122,9 +177,7 @@ export default function MembersPage() {
                     <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
                       {getInitials(m.name)}
                     </div>
-                    <div>
-                      <div className="font-semibold text-gray-900">{m.name}</div>
-                    </div>
+                    <div className="font-semibold text-gray-900">{m.name}</div>
                   </div>
                 </td>
                 <td className="px-4 py-3">
