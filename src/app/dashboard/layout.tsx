@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/')
   }
 
-  const [cycleLabel, setCycleLabel] = useState(cycleLabel)
+  const [cycleLabel, setCycleLabel] = useState('جارٍ التحميل...')
 
   useEffect(() => {
     async function loadSettings() {
