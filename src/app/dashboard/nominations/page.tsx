@@ -12,6 +12,7 @@ export default function NominationsPage() {
   const [selectedNom, setSelectedNom] = useState<any>(null)
   const [form, setForm] = useState({ nominee_name: '', achievement_field: '', achievements_desc: '', nomination_reasons: '', contact_info: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [cycleStatus, setCycleStatus] = useState('nominations')
 
   useEffect(() => { load() }, [])
 
@@ -26,6 +27,9 @@ export default function NominationsPage() {
       : supabase.from('nominations').select('*, profiles(name)').eq('nominator_id', user.id).order('created_at', { ascending: false })
     const { data } = await query
     setNominations(data || [])
+
+    const { data: s } = await supabase.from('settings').select('*')
+    if (s) { const map: any = {}; s.forEach((r: any) => { map[r.key] = r.value }); setCycleStatus(map.cycle_status || 'nominations') }
     setLoading(false)
   }
 
@@ -65,6 +69,8 @@ export default function NominationsPage() {
     shortlisted: { label: 'مختصرة', class: 'bg-blue-50 text-blue-600' },
     rejected: { label: 'مرفوض', class: 'bg-red-50 text-red-500' },
   }
+
+  const allowNomination = ['nominations', 'draft'].includes(cycleStatus)
 
   const fields = ['ريادة الأعمال', 'التعليم', 'العمل الاجتماعي', 'الصحة', 'الرياضة', 'الفنون والثقافة', 'التقنية', 'أخرى']
 
@@ -118,7 +124,13 @@ export default function NominationsPage() {
           </div>
         </div>
       )}
-
+{!allowNomination && profile?.role !== 'admin' && (
+        <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-5 text-center">
+          <div className="text-2xl mb-2">🔒</div>
+          <div className="font-semibold text-amber-700">باب الترشيح مغلق حالياً</div>
+          <div className="text-sm text-amber-600 mt-1">المبادرة في مرحلة أخرى — تابع التحديثات من لوحة التحكم</div>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">الترشيحات</h1>
