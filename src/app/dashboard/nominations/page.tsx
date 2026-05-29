@@ -136,14 +136,14 @@ export default function NominationsPage() {
           <h1 className="text-xl font-bold text-gray-900">الترشيحات</h1>
           <p className="text-sm text-gray-500 mt-1">{nominations.length} ترشيح مقدم</p>
         </div>
-        {!showForm && (
+        {!showForm && allowNomination && profile?.role !== 'admin' && (
           <button onClick={() => setShowForm(true)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
             + تقديم ترشيح
           </button>
         )}
       </div>
 
-      {showForm && (
+      {showForm && allowNomination && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6">
           <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 mb-4">
             <div className="text-sm font-semibold text-emerald-700 mb-2">معايير الترشيح</div>
