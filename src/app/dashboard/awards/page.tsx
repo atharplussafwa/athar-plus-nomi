@@ -9,6 +9,7 @@ export default function AwardsPage() {
   const [awards, setAwards] = useState<any[]>([])
   const [awardVotes, setAwardVotes] = useState<any[]>([])
   const [winner, setWinner] = useState<any>(null)
+const [topVoter, setTopVoter] = useState<any>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -25,6 +26,14 @@ export default function AwardsPage() {
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(p)
 
+const { data: votes } = await supabase.from('honoree_votes').select('nomination_id')
+    if (votes && votes.length > 0) {
+      const counts: any = {}
+      votes.forEach((v: any) => { counts[v.nomination_id] = (counts[v.nomination_id] || 0) + 1 })
+      const topId = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b)
+      const { data: nom } = await supabase.from('nominations').select('nominee_name, achievement_field').eq('id', topId).single()
+      if (nom) setTopVoter({ ...nom, votes: counts[topId] })
+    }
     const { data: a } = await supabase.from('award_options').select('*').eq('is_active', true)
     setAwards(a || [])
 
@@ -122,7 +131,16 @@ export default function AwardsPage() {
       </div>
 
       {/* المكرَّم */}
-      {winner ? (
+{topVoter && (
+        <div className="bg-emerald-500 rounded-xl p-5 text-white text-center mb-5">
+          <div className="text-3xl mb-2">🏆</div>
+          <div className="text-sm opacity-80 mb-1">المكرَّم المختار</div>
+          <div className="text-2xl font-bold">{topVoter.nominee_name}</div>
+          <div className="text-sm opacity-85 mt-1">{topVoter.achievement_field}</div>
+          <div className="text-xs opacity-70 mt-2">{topVoter.votes} أصوات</div>
+        </div>
+      )}      
+{winner ? (
         <div className="bg-emerald-500 rounded-xl p-5 text-white text-center mb-5">
           <div className="text-3xl mb-2">🏆</div>
           <div className="text-xl font-bold">{winner.nominee_name}</div>
