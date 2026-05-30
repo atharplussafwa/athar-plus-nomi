@@ -13,6 +13,7 @@ export default function VotingPage() {
   const [votes, setVotes] = useState<any[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+const [daysLeft, setDaysLeft] = useState<number | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -23,6 +24,17 @@ export default function VotingPage() {
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(p)
 
+const { data: vs } = await supabase.from('settings').select('*')
+    if (vs) {
+      const map: any = {}
+      vs.forEach((r: any) => { map[r.key] = r.value })
+      if (map.voting_end) {
+        const end = new Date(map.voting_end)
+        const today = new Date()
+        const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        setDaysLeft(diff)
+      }
+    }
     const { data: noms } = await supabase
       .from('nominations').select('*').eq('status', 'shortlisted')
     setShortlisted(noms || [])
@@ -86,9 +98,11 @@ export default function VotingPage() {
             {isAdmin ? 'نتائج التصويت الإجمالية' : 'اختر مرشحاً واحداً للتكريم'}
           </p>
         </div>
-        <div className="text-xs bg-amber-50 text-amber-600 border border-amber-100 px-3 py-1.5 rounded-full">
-          ⏱ يومان متبقيان
-        </div>
+        {daysLeft !== null && (
+          <div className={`text-xs px-3 py-1.5 rounded-full border ${daysLeft > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+            {daysLeft > 0 ? `⏱ ${daysLeft} ${daysLeft === 1 ? 'يوم متبقٍ' : 'أيام متبقية'}` : '⛔ انتهت فترة التصويت'}
+          </div>
+        )}
       </div>
 
       {!isAdmin && (

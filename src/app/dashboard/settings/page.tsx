@@ -107,7 +107,27 @@ export default function SettingsPage() {
               placeholder="2026" />
           </div>
         </div>
-        <div>
+<div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">تاريخ بداية التصويت</label>
+            <input
+              type="date"
+              value={settings.voting_start || ''}
+              onChange={e => setSettings({ ...settings, voting_start: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">تاريخ نهاية التصويت</label>
+            <input
+              type="date"
+              value={settings.voting_end || ''}
+              onChange={e => setSettings({ ...settings, voting_end: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        </div>        
+<div>
           <label className="block text-xs font-medium text-gray-600 mb-1">مرحلة الدورة الحالية</label>
           <select value={settings.cycle_status || 'nominations'} onChange={e => setSettings({ ...settings, cycle_status: e.target.value })}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
