@@ -16,6 +16,7 @@ const ADMIN_NAV = [
   { id: 'budget', icon: '📊', label: 'الميزانية' },
   { section: 'الإدارة' },
   { id: 'settings', icon: '⚙️', label: 'الإعدادات' },
+  { id: 'report', icon: '📄', label: 'التقرير' },
   { id: 'members', icon: '👥', label: 'الأعضاء' },
 ]
 
