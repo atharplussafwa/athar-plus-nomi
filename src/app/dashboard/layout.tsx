@@ -37,6 +37,7 @@ const BOTTOM_NAV_ADMIN = [
   { id: 'nominations', icon: '📝', label: 'الترشيحات' },
   { id: 'voting', icon: '🗳', label: 'التصويت' },
   { id: 'awards', icon: '🏆', label: 'الجائزة' },
+  { id: 'report', icon: '📄', label: 'التقرير' },
   { id: 'members', icon: '👥', label: 'الأعضاء' },
 ]
 
