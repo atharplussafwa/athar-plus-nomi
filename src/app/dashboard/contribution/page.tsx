@@ -57,17 +57,21 @@ export default function ContributionPage() {
       .eq('member_hash', memberHash)
       .limit(1)
     const existing = existingList?.[0] || null
-    if (existing) {
-      await supabase.from('contribution_intents')
-        .update({ is_willing: val })
-        .eq('id', existing.id)
+    if (!val) {
+      if (existing) {
+        await supabase.from('contribution_intents').delete().eq('id', existing.id)
+      }
     } else {
-      await supabase.from('contribution_intents').insert({
-        member_hash: memberHash,
-        member_id: user.id,
-        is_willing: val,
-        cycle_id: null
-      })
+      if (existing) {
+        await supabase.from('contribution_intents').update({ is_willing: true }).eq('id', existing.id)
+      } else {
+        await supabase.from('contribution_intents').insert({
+          member_hash: memberHash,
+          member_id: user.id,
+          is_willing: true,
+          cycle_id: null
+        })
+      }
     }
     setIntent(val)
     setSubmitting(false)
