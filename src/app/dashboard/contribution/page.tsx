@@ -8,8 +8,7 @@ export default function ContributionPage() {
   const [profile, setProfile] = useState<any>(null)
   const [intent, setIntent] = useState<boolean | null>(null)
   const [willingCount, setWillingCount] = useState(0)
-const [willingMembers, setWillingMembers] = useState<any[]>([])
-  const [totalSpentAdmin, setTotalSpentAdmin] = useState('')
+  const [willingMembers, setWillingMembers] = useState<any[]>([])
   const [totalSpent, setTotalSpent] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -39,6 +38,8 @@ const [willingMembers, setWillingMembers] = useState<any[]>([])
       setWillingCount(count || 0)
       setWillingMembers(willing || [])
     }
+    setLoading(false)
+  }
 
   function hashMember(userId: string) {
     return btoa(userId + 'athar-plus-contrib').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32)
@@ -58,6 +59,11 @@ const [willingMembers, setWillingMembers] = useState<any[]>([])
     }, { onConflict: 'member_hash,cycle_id' })
     setIntent(val)
     setSubmitting(false)
+  }
+
+  async function updateAmount(id: string, amount: number) {
+    const supabase = createClient()
+    await supabase.from('contribution_intents').update({ amount }).eq('id', id)
   }
 
   function calcPerPerson() {
@@ -84,7 +90,6 @@ const [willingMembers, setWillingMembers] = useState<any[]>([])
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-5 text-sm text-blue-700">
             🔒 رغبتك في المساهمة لا تظهر لأي عضو آخر. بعد الحفل سيُقسَّم إجمالي المصروف على المتطوعين.
           </div>
-
           {intent === null ? (
             <div className="bg-white border border-gray-200 rounded-xl p-8 text-center">
               <div className="text-4xl mb-4 text-emerald-400">♡</div>
@@ -135,36 +140,6 @@ const [willingMembers, setWillingMembers] = useState<any[]>([])
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">لوحة القطة — للمدير فقط</h2>
           <div className="grid grid-cols-3 gap-3 mb-5">
-{willingMembers.length > 0 && (
-            <div className="mt-4">
-              <div className="text-xs font-semibold text-gray-600 mb-2">أسماء المتطوعين للمساهمة</div>
-              <div className="space-y-2">
-                {willingMembers.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">
-                        {m.profiles?.name?.split(' ').slice(0,2).map((w:string)=>w[0]).join('') || '؟'}
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">{m.profiles?.name || '—'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        placeholder="المبلغ"
-                        defaultValue={m.amount || ''}
-                        onBlur={async (e) => {
-                          const supabase = createClient()
-                          await supabase.from('contribution_intents').update({ amount: parseFloat(e.target.value) || 0 }).eq('id', m.id)
-                        }}
-                        className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-sm text-left focus:outline-none focus:border-emerald-500"
-                      />
-                      <span className="text-xs text-gray-400">ريال</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="text-xs text-gray-500 mb-1">المتطوعون</div>
               <div className="text-2xl font-bold text-gray-900">{willingCount}</div>
@@ -183,6 +158,35 @@ const [willingMembers, setWillingMembers] = useState<any[]>([])
               <div className="text-xs text-gray-400 mt-1">ريال</div>
             </div>
           </div>
+
+          {willingMembers.length > 0 && (
+            <div className="mb-5">
+              <div className="text-xs font-semibold text-gray-600 mb-2">أسماء المتطوعين للمساهمة</div>
+              <div className="space-y-2">
+                {willingMembers.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-bold">
+                        {m.profiles?.name?.split(' ').slice(0,2).map((w:string) => w[0]).join('') || '؟'}
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{m.profiles?.name || '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder="المبلغ"
+                        defaultValue={m.amount || ''}
+                        onBlur={async (e) => { await updateAmount(m.id, parseFloat(e.target.value) || 0) }}
+                        className="w-24 border border-gray-200 rounded-lg px-2 py-1 text-sm text-left focus:outline-none focus:border-emerald-500"
+                      />
+                      <span className="text-xs text-gray-400">ريال</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">أدخل إجمالي المصروف بعد الحفل (ريال)</label>
             <div className="flex gap-2">
