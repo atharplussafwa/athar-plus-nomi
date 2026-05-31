@@ -50,14 +50,12 @@ export default function ContributionPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    if (!val && intentId) {
-      await supabase.from('contribution_intents').delete().eq('id', intentId)
+    if (!val) {
+      await supabase.from('contribution_intents').delete().eq('member_id', user.id)
       setIntent(null)
       setIntentId(null)
-    } else if (val && intentId) {
-      await supabase.from('contribution_intents').update({ is_willing: true }).eq('id', intentId)
-      setIntent(true)
-    } else if (val && !intentId) {
+    } else {
+      await supabase.from('contribution_intents').delete().eq('member_id', user.id)
       const { data } = await supabase.from('contribution_intents').insert({
         member_id: user.id,
         member_hash: user.id,
