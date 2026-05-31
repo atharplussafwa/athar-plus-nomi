@@ -51,11 +51,12 @@ export default function ContributionPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const memberHash = hashMember(user.id)
-    const { data: existing } = await supabase
+    const { data: existingList } = await supabase
       .from('contribution_intents')
       .select('id')
       .eq('member_hash', memberHash)
-      .maybeSingle()
+      .limit(1)
+    const existing = existingList?.[0] || null
     if (existing) {
       await supabase.from('contribution_intents')
         .update({ is_willing: val })
