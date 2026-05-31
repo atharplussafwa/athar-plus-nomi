@@ -51,12 +51,23 @@ export default function ContributionPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const memberHash = hashMember(user.id)
-    await supabase.from('contribution_intents').upsert({
-      member_hash: memberHash,
-      member_id: user.id,
-      is_willing: val,
-      cycle_id: null
-    }, { onConflict: 'member_hash,cycle_id' })
+    const { data: existing } = await supabase
+      .from('contribution_intents')
+      .select('id')
+      .eq('member_hash', memberHash)
+      .maybeSingle()
+    if (existing) {
+      await supabase.from('contribution_intents')
+        .update({ is_willing: val })
+        .eq('id', existing.id)
+    } else {
+      await supabase.from('contribution_intents').insert({
+        member_hash: memberHash,
+        member_id: user.id,
+        is_willing: val,
+        cycle_id: null
+      })
+    }
     setIntent(val)
     setSubmitting(false)
   }
