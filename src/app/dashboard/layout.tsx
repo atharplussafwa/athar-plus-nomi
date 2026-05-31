@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 const ADMIN_NAV = [
   { section: 'عام' },
   { id: 'dashboard', icon: '🏠', label: 'لوحة التحكم' },
+  { id: 'profile', icon: '👤', label: 'ملفي الشخصي' },
   { section: 'مراحل المبادرة' },
   { id: 'nominations', icon: '📝', label: 'الترشيحات' },
   { id: 'shortlist', icon: '📋', label: 'القائمة المختصرة' },
@@ -23,6 +24,7 @@ const ADMIN_NAV = [
 const MEMBER_NAV = [
   { section: 'عام' },
   { id: 'dashboard', icon: '🏠', label: 'لوحة التحكم' },
+  { id: 'profile', icon: '👤', label: 'ملفي الشخصي' },
   { section: 'مشاركتي' },
   { id: 'nominations', icon: '📝', label: 'ترشيح' },
   { id: 'voting', icon: '🗳', label: 'التصويت' },
