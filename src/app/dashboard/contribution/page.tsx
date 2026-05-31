@@ -7,6 +7,7 @@ export default function ContributionPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [intent, setIntent] = useState<boolean | null>(null)
+  const [intentId, setIntentId] = useState<string | null>(null)
   const [willingCount, setWillingCount] = useState(0)
   const [willingMembers, setWillingMembers] = useState<any[]>([])
   const [totalSpent, setTotalSpent] = useState('')
@@ -22,13 +23,15 @@ export default function ContributionPage() {
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(p)
 
-    const memberHash = hashMember(user.id)
     const { data: existing } = await supabase
       .from('contribution_intents')
-      .select('*')
-      .eq('member_hash', memberHash)
+      .select('id, is_willing')
+      .eq('member_id', user.id)
       .maybeSingle()
-    if (existing) setIntent(existing.is_willing)
+    if (existing) {
+      setIntent(existing.is_willing)
+      setIntentId(existing.id)
+    }
 
     if (p?.role === 'admin') {
       const { data: willing, count } = await supabase
@@ -41,39 +44,29 @@ export default function ContributionPage() {
     setLoading(false)
   }
 
-  function hashMember(userId: string) {
-    return btoa(userId + 'athar-plus-contrib').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32)
-  }
-
   async function submitIntent(val: boolean) {
     setSubmitting(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const memberHash = hashMember(user.id)
-    const { data: existingList } = await supabase
-      .from('contribution_intents')
-      .select('id')
-      .eq('member_hash', memberHash)
-      .limit(1)
-    const existing = existingList?.[0] || null
-    if (!val) {
-      if (existing) {
-        await supabase.from('contribution_intents').delete().eq('id', existing.id)
-      }
-    } else {
-      if (existing) {
-        await supabase.from('contribution_intents').update({ is_willing: true }).eq('id', existing.id)
-      } else {
-        await supabase.from('contribution_intents').insert({
-          member_hash: memberHash,
-          member_id: user.id,
-          is_willing: true,
-          cycle_id: null
-        })
-      }
+
+    if (!val && intentId) {
+      await supabase.from('contribution_intents').delete().eq('id', intentId)
+      setIntent(null)
+      setIntentId(null)
+    } else if (val && intentId) {
+      await supabase.from('contribution_intents').update({ is_willing: true }).eq('id', intentId)
+      setIntent(true)
+    } else if (val && !intentId) {
+      const { data } = await supabase.from('contribution_intents').insert({
+        member_id: user.id,
+        member_hash: user.id,
+        is_willing: true,
+        cycle_id: null
+      }).select('id').single()
+      if (data) setIntentId(data.id)
+      setIntent(true)
     }
-    setIntent(val)
     setSubmitting(false)
   }
 
@@ -84,9 +77,7 @@ export default function ContributionPage() {
 
   function calcPerPerson() {
     const spent = parseFloat(totalSpent) || 0
-    if (spent > 0 && willingCount > 0) {
-      return Math.round(spent / willingCount).toLocaleString('ar-SA')
-    }
+    if (spent > 0 && willingCount > 0) return Math.round(spent / willingCount).toLocaleString('ar-SA')
     return '—'
   }
 
@@ -143,7 +134,7 @@ export default function ContributionPage() {
                   </div>
                 </div>
               )}
-              <button onClick={() => setIntent(null)}
+              <button onClick={() => { setIntent(null); setIntentId(null) }}
                 className="text-sm border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
                 تغيير اختياري
               </button>
@@ -206,15 +197,10 @@ export default function ContributionPage() {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">أدخل إجمالي المصروف بعد الحفل (ريال)</label>
             <div className="flex gap-2">
-              <input
-                type="number"
-                value={totalSpent}
-                onChange={e => setTotalSpent(e.target.value)}
+              <input type="number" value={totalSpent} onChange={e => setTotalSpent(e.target.value)}
                 className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-                placeholder="0"
-              />
-              <button
-                onClick={() => setTotalSpent(totalSpent)}
+                placeholder="0" />
+              <button onClick={() => setTotalSpent(totalSpent)}
                 className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
                 احسب
               </button>
