@@ -46,25 +46,13 @@ export default function ContributionPage() {
 
   async function submitIntent(val: boolean) {
     setSubmitting(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    if (!val) {
-      await supabase.from('contribution_intents').delete().eq('member_id', user.id)
-      setIntent(null)
-      setIntentId(null)
-    } else {
-      await supabase.from('contribution_intents').delete().eq('member_id', user.id)
-      const { data } = await supabase.from('contribution_intents').insert({
-        member_id: user.id,
-        member_hash: user.id,
-        is_willing: true,
-        cycle_id: null
-      }).select('id').single()
-      if (data) setIntentId(data.id)
-      setIntent(true)
-    }
+    await fetch('/api/contribution', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_willing: val })
+    })
+    setIntent(val ? true : null)
+    setIntentId(null)
     setSubmitting(false)
   }
 
