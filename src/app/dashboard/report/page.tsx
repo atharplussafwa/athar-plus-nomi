@@ -26,31 +26,22 @@ export default function ReportPage() {
     const { data: p } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     if (p?.role !== 'admin') { router.push('/dashboard'); return }
     setProfile(p)
-
     const { data: s } = await supabase.from('settings').select('*')
     if (s) { const map: any = {}; s.forEach((r: any) => { map[r.key] = r.value }); setSettings(map) }
-
     const { data: noms } = await supabase.from('nominations').select('*, profiles(name)').order('created_at', { ascending: false })
     setNominations(noms || [])
-
     const { data: v } = await supabase.from('honoree_votes').select('nomination_id')
     setVotes(v || [])
-
     const { data: av } = await supabase.from('award_votes').select('award_option_id')
     setAwardVotes(av || [])
-
     const { data: a } = await supabase.from('award_options').select('*')
     setAwards(a || [])
-
     const { data: exp } = await supabase.from('expenses').select('*').order('created_at', { ascending: false })
     setExpenses(exp || [])
-
     const { data: b } = await supabase.from('budget').select('*').maybeSingle()
     setBudget(b)
-
     const { count } = await supabase.from('contribution_intents').select('*', { count: 'exact', head: true }).eq('is_willing', true)
     setWillingCount(count || 0)
-
     setLoading(false)
   }
 
@@ -76,266 +67,144 @@ export default function ReportPage() {
   const topAward = getTopAward()
   const cycleName = `${settings.cycle_name || 'الدورة'} — Q${settings.cycle_quarter || '1'} ${settings.cycle_year || '2026'}`
 
-  async function generatePDF() {
+  function generatePDF() {
     setGenerating(true)
-    const { default: jsPDF } = await import('jspdf')
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
-    const W = 210
-    const margin = 20
-    let y = 0
-
-    // Header background
-    doc.setFillColor(8, 80, 65)
-    doc.rect(0, 0, W, 50, 'F')
-
-    // Logo circle
-    doc.setFillColor(29, 158, 117)
-    doc.circle(W / 2, 20, 10, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('+', W / 2, 24, { align: 'center' })
-
-    // Title
-    doc.setFontSize(18)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Athar+ Initiative', W / 2, 37, { align: 'center' })
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Al-Hajj Adel Ali Habib Al-Quraish Council', W / 2, 44, { align: 'center' })
-
-    y = 60
-
-    // Report title box
-    doc.setFillColor(225, 245, 238)
-    doc.roundedRect(margin, y, W - margin * 2, 20, 3, 3, 'F')
-    doc.setTextColor(15, 110, 86)
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Cycle Report', W / 2, y + 9, { align: 'center' })
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(cycleName, W / 2, y + 16, { align: 'center' })
-
-    y += 28
-
-    // Date
-    doc.setTextColor(90, 89, 84)
-    doc.setFontSize(9)
-    doc.text(`Report Date: ${new Date().toLocaleDateString('en-GB')}`, margin, y)
-    doc.text(`Issued by: Athar+ Executive Board`, W - margin, y, { align: 'right' })
-    y += 10
-
-    // Divider
-    doc.setDrawColor(209, 209, 199)
-    doc.line(margin, y, W - margin, y)
-    y += 8
-
-    // Section: Summary
-    doc.setFillColor(29, 158, 117)
-    doc.roundedRect(margin, y, W - margin * 2, 8, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('1. Cycle Summary', margin + 5, y + 5.5)
-    y += 12
-
-    const shortlisted = nominations.filter(n => n.status === 'shortlisted').length
-    const stats = [
-      ['Total Nominations', nominations.length.toString()],
-      ['Shortlisted Candidates', shortlisted.toString()],
-      ['Total Votes Cast', votes.length.toString()],
-      ['Members Willing to Contribute', willingCount.toString()],
-    ]
-
-    doc.setTextColor(26, 26, 24)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    stats.forEach(([label, value], i) => {
-      const col = i % 2
-      const row = Math.floor(i / 2)
-      const x = col === 0 ? margin : W / 2 + 5
-      const ry = y + row * 12
-      doc.setFillColor(col === 0 ? 244 : 244, col === 0 ? 242 : 242, col === 0 ? 238 : 238)
-      doc.roundedRect(x, ry, 80, 10, 1.5, 1.5, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(29, 158, 117)
-      doc.text(value, x + 5, ry + 6.5)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(90, 89, 84)
-      doc.text(label, x + 20, ry + 6.5)
-    })
-    y += Math.ceil(stats.length / 2) * 12 + 8
-
-    // Section: Winner
-    doc.setFillColor(29, 158, 117)
-    doc.roundedRect(margin, y, W - margin * 2, 8, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('2. Honoree', margin + 5, y + 5.5)
-    y += 12
-
-    if (winner) {
-      doc.setFillColor(225, 245, 238)
-      doc.roundedRect(margin, y, W - margin * 2, 22, 2, 2, 'F')
-      doc.setTextColor(8, 80, 65)
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
-      doc.text(winner.nominee_name || '', W / 2, y + 9, { align: 'center' })
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(15, 110, 86)
-      doc.text(`Field: ${winner.achievement_field || ''}`, W / 2, y + 15, { align: 'center' })
-      doc.text(`Votes Received: ${winner.voteCount}`, W / 2, y + 20, { align: 'center' })
-      y += 26
-    } else {
-      doc.setTextColor(90, 89, 84)
-      doc.setFontSize(10)
-      doc.text('Not determined yet', margin, y + 5)
-      y += 12
-    }
-
-    // Section: Nominations
-    y += 4
-    doc.setFillColor(29, 158, 117)
-    doc.roundedRect(margin, y, W - margin * 2, 8, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('3. Nominations Details', margin + 5, y + 5.5)
-    y += 12
-
-    nominations.forEach((n, i) => {
-      if (y > 240) {
-        doc.addPage()
-        y = 20
-      }
-      const statusLabel: any = { pending: 'Pending', approved: 'Approved', shortlisted: 'Shortlisted', rejected: 'Rejected' }
-      const statusColor: any = { pending: [186, 117, 23], approved: [29, 158, 117], shortlisted: [24, 95, 165], rejected: [162, 45, 45] }
-      const sc = statusColor[n.status] || [90, 89, 84]
-
-      doc.setFillColor(i % 2 === 0 ? 244 : 255, i % 2 === 0 ? 242 : 255, i % 2 === 0 ? 238 : 255)
-      doc.rect(margin, y, W - margin * 2, 14, 'F')
-      doc.setTextColor(26, 26, 24)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.text(`${i + 1}. ${n.nominee_name || ''}`, margin + 3, y + 5.5)
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(90, 89, 84)
-      doc.text(`Field: ${n.achievement_field || ''}  |  Nominated by: ${n.profiles?.name || ''}`, margin + 3, y + 11)
-      doc.setTextColor(sc[0], sc[1], sc[2])
-      doc.setFont('helvetica', 'bold')
-      doc.text(statusLabel[n.status] || '', W - margin - 3, y + 5.5, { align: 'right' })
-      y += 15
-    })
-
-    y += 4
-
-    // Section: Award
-    if (y > 230) { doc.addPage(); y = 20 }
-    doc.setFillColor(29, 158, 117)
-    doc.roundedRect(margin, y, W - margin * 2, 8, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('4. Selected Award', margin + 5, y + 5.5)
-    y += 12
-
-    doc.setTextColor(26, 26, 24)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    if (topAward) {
-      doc.setFillColor(225, 245, 238)
-      doc.roundedRect(margin, y, W - margin * 2, 14, 2, 2, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(8, 80, 65)
-      doc.text(topAward.title || '', margin + 5, y + 6)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(90, 89, 84)
-      doc.text(`Estimated Value: ${topAward.estimated_value || 0} SAR`, margin + 5, y + 11)
-      y += 18
-    } else {
-      doc.text('Not determined yet', margin, y + 5)
-      y += 12
-    }
-
-    // Section: Budget
-    y += 4
-    if (y > 230) { doc.addPage(); y = 20 }
-    doc.setFillColor(29, 158, 117)
-    doc.roundedRect(margin, y, W - margin * 2, 8, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.text('5. Financial Summary', margin + 5, y + 5.5)
-    y += 12
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) { setGenerating(false); return }
 
     const budgetTotal = budget?.total_amount || 0
     const remaining = budgetTotal - totalExpenses
     const perPerson = willingCount > 0 ? Math.round(totalExpenses / willingCount) : 0
 
-    const finRows = [
-      ['Total Budget', `${budgetTotal.toLocaleString()} SAR`],
-      ['Total Expenses', `${totalExpenses.toLocaleString()} SAR`],
-      ['Remaining', `${remaining.toLocaleString()} SAR`],
-      ['Contributing Members', willingCount.toString()],
-      ['Share per Contributor', perPerson > 0 ? `${perPerson.toLocaleString()} SAR` : 'TBD'],
-    ]
+    const statusMap: any = { pending: 'قيد المراجعة', approved: 'معتمد', shortlisted: 'مختصرة', rejected: 'مرفوض' }
+    const colorMap: any = { pending: '#BA7517', approved: '#1D9E75', shortlisted: '#185FA5', rejected: '#A32D2D' }
 
-    finRows.forEach(([label, value], i) => {
-      doc.setFillColor(i % 2 === 0 ? 244 : 255, i % 2 === 0 ? 242 : 255, i % 2 === 0 ? 238 : 255)
-      doc.rect(margin, y, W - margin * 2, 10, 'F')
-      doc.setTextColor(90, 89, 84)
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.text(label, margin + 5, y + 6.5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(i === 2 && remaining < 0 ? 162 : 29, i === 2 && remaining < 0 ? 45 : 158, i === 2 && remaining < 0 ? 45 : 117)
-      doc.text(value, W - margin - 5, y + 6.5, { align: 'right' })
-      y += 11
-    })
+    const nomsRows = nominations.map((n, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td><strong>${n.nominee_name || ''}</strong></td>
+        <td>${n.achievement_field || ''}</td>
+        <td>${n.profiles?.name || '—'}</td>
+        <td><span style="color:${colorMap[n.status]};font-weight:600">${statusMap[n.status] || ''}</span></td>
+      </tr>`).join('')
 
-    y += 8
+    const expRows = expenses.map(e => `
+      <tr>
+        <td>${e.description || ''}</td>
+        <td>${e.category || '—'}</td>
+        <td style="font-weight:600;color:#1D9E75">${parseFloat(e.amount || 0).toLocaleString('ar-SA')} ريال</td>
+      </tr>`).join('')
 
-    // Expenses detail
-    if (expenses.length > 0) {
-      if (y > 230) { doc.addPage(); y = 20 }
-      doc.setTextColor(90, 89, 84)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Expense Breakdown:', margin, y)
-      y += 6
-      expenses.forEach((e, i) => {
-        if (y > 270) { doc.addPage(); y = 20 }
-        doc.setFillColor(i % 2 === 0 ? 244 : 255, i % 2 === 0 ? 242 : 255, i % 2 === 0 ? 238 : 255)
-        doc.rect(margin, y, W - margin * 2, 9, 'F')
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(26, 26, 24)
-        doc.text(`${e.description || ''} ${e.category ? '(' + e.category + ')' : ''}`, margin + 3, y + 6)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(29, 158, 117)
-        doc.text(`${parseFloat(e.amount || 0).toLocaleString()} SAR`, W - margin - 3, y + 6, { align: 'right' })
-        y += 10
-      })
-    }
+    const winnerHTML = winner
+      ? `<div class="winner-box">
+          <div class="trophy">🏆</div>
+          <div class="winner-name">${winner.nominee_name}</div>
+          <div class="winner-field">${winner.achievement_field}</div>
+          <div class="winner-votes">${winner.voteCount} أصوات</div>
+        </div>`
+      : '<p class="no-data">لم يُحدد بعد</p>'
 
-    // Footer
-    const pageCount = doc.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i)
-      doc.setFillColor(8, 80, 65)
-      doc.rect(0, 282, W, 15, 'F')
-      doc.setTextColor(157, 225, 203)
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Athar+ Initiative — Al-Hajj Adel Ali Habib Al-Quraish Council — Safwa City', W / 2, 290, { align: 'center' })
-      doc.text(`Page ${i} of ${pageCount}`, W - margin, 290, { align: 'right' })
-    }
+    const awardHTML = topAward
+      ? `<div class="award-box">
+          <div><strong>${topAward.title}</strong><br>
+          <span>${topAward.description || ''}</span><br>
+          <span>القيمة التقريبية: ${topAward.estimated_value || 0} ريال</span></div>
+        </div>`
+      : '<p class="no-data">لم تُحدد بعد</p>'
 
-    doc.save(`Athar-Plus-Report-${settings.cycle_quarter || '1'}-${settings.cycle_year || '2026'}.pdf`)
+    printWindow.document.write(`<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>تقرير ${cycleName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Cairo',sans-serif;color:#1A1A18;background:white;font-size:13px}
+.header{background:#085041;color:white;padding:28px 40px;text-align:center}
+.logo{width:56px;height:56px;background:#1D9E75;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin-bottom:10px}
+.header h1{font-size:22px;font-weight:700;margin-bottom:4px}
+.header h2{font-size:13px;opacity:.8;font-weight:400}
+.meta{background:#E1F5EE;padding:10px 40px;display:flex;justify-content:space-between;font-size:11px;color:#0F6E56;border-bottom:2px solid #1D9E75}
+.content{padding:22px 40px}
+.section{margin-bottom:24px}
+.sec-title{background:#1D9E75;color:white;padding:7px 13px;border-radius:5px;font-size:13px;font-weight:700;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:#F4F2EE;border-radius:7px;padding:12px;text-align:center}
+.stat-v{font-size:20px;font-weight:700;color:#1D9E75}
+.stat-l{font-size:11px;color:#5A5954;margin-top:2px}
+.winner-box{background:#085041;color:white;border-radius:9px;padding:18px;text-align:center}
+.trophy{font-size:28px;margin-bottom:6px}
+.winner-name{font-size:18px;font-weight:700}
+.winner-field{font-size:12px;opacity:.8;margin-top:3px}
+.winner-votes{font-size:11px;opacity:.7;margin-top:3px}
+.award-box{background:#E1F5EE;border-radius:7px;padding:12px}
+.award-box strong{color:#085041;font-size:14px}
+.award-box span{color:#5A5954;font-size:12px;display:block;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#F4F2EE;padding:8px 10px;text-align:right;font-weight:600;color:#5A5954;border-bottom:1px solid #D3D1C7}
+td{padding:8px 10px;border-bottom:1px solid #EEEDE8}
+.total-row td{background:#E1F5EE;font-weight:700}
+.no-data{color:#8A8880;font-style:italic;padding:6px 0}
+.footer{background:#085041;color:#9FE1CB;padding:12px 40px;text-align:center;font-size:11px;margin-top:16px}
+@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">أ+</div>
+  <h1>تقرير مبادرة أثر+</h1>
+  <h2>مجلس الحاج عادل علي حبيب آل قريش</h2>
+</div>
+<div class="meta">
+  <span>تاريخ الإصدار: ${new Date().toLocaleDateString('ar-SA')}</span>
+  <span>${cycleName}</span>
+  <span>صادر عن: مجلس إدارة مبادرة أثر+</span>
+</div>
+<div class="content">
+  <div class="section">
+    <div class="sec-title">١. ملخص الدورة</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v">${nominations.length}</div><div class="stat-l">الترشيحات</div></div>
+      <div class="stat"><div class="stat-v">${nominations.filter(n=>n.status==='shortlisted').length}</div><div class="stat-l">المختصرون</div></div>
+      <div class="stat"><div class="stat-v">${votes.length}</div><div class="stat-l">الأصوات</div></div>
+      <div class="stat"><div class="stat-v">${willingCount}</div><div class="stat-l">المتطوعون للقطة</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="sec-title">٢. المكرَّم الفائز</div>
+    ${winnerHTML}
+  </div>
+  <div class="section">
+    <div class="sec-title">٣. تفاصيل الترشيحات</div>
+    <table>
+      <thead><tr><th>#</th><th>الاسم</th><th>المجال</th><th>المرشِّح</th><th>الحالة</th></tr></thead>
+      <tbody>${nomsRows || '<tr><td colspan="5" style="text-align:center;color:#8A8880;padding:16px">لا توجد ترشيحات</td></tr>'}</tbody>
+    </table>
+  </div>
+  <div class="section">
+    <div class="sec-title">٤. الجائزة المختارة</div>
+    ${awardHTML}
+  </div>
+  <div class="section">
+    <div class="sec-title">٥. الملخص المالي</div>
+    <table>
+      <thead><tr><th>البند</th><th>التصنيف</th><th>المبلغ</th></tr></thead>
+      <tbody>
+        <tr><td colspan="2"><strong>الميزانية الإجمالية</strong></td><td style="font-weight:700;color:#1D9E75">${budgetTotal.toLocaleString('ar-SA')} ريال</td></tr>
+        ${expRows}
+        <tr class="total-row"><td colspan="2"><strong>إجمالي المصروفات</strong></td><td>${totalExpenses.toLocaleString('ar-SA')} ريال</td></tr>
+        <tr><td colspan="2">المتبقي</td><td style="font-weight:700;color:${remaining < 0 ? '#A32D2D' : '#1D9E75'}">${remaining.toLocaleString('ar-SA')} ريال</td></tr>
+        <tr><td colspan="2">عدد المتطوعين للقطة</td><td>${willingCount} عضو</td></tr>
+        <tr><td colspan="2">نصيب كل مساهم</td><td style="font-weight:700;color:#1D9E75">${perPerson > 0 ? perPerson.toLocaleString('ar-SA') + ' ريال' : 'لم يُحدد بعد'}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="footer">مبادرة أثر+ — مجلس الحاج عادل علي حبيب آل قريش — مدينة صفوى</div>
+<script>window.onload=function(){setTimeout(function(){window.print()},800)}</script>
+</body></html>`)
+    printWindow.document.close()
     setGenerating(false)
   }
 
@@ -347,38 +216,27 @@ export default function ReportPage() {
         <h1 className="text-xl font-bold text-gray-900">تقرير الدورة</h1>
         <p className="text-sm text-gray-500 mt-1">{cycleName}</p>
       </div>
-
       <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">محتويات التقرير</h2>
         <div className="space-y-2 text-sm text-gray-600">
-          {[
-            '1. ملخص الدورة — الإحصائيات العامة',
-            '2. المكرَّم الفائز ومجال إنجازه',
-            '3. تفاصيل جميع الترشيحات',
-            '4. الجائزة المختارة',
-            '5. الملخص المالي — الميزانية والمصروفات والقطة',
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-emerald-500">✓</span>{item}
-            </div>
+          {['١. ملخص الدورة — الإحصائيات العامة','٢. المكرَّم الفائز ومجال إنجازه','٣. تفاصيل جميع الترشيحات','٤. الجائزة المختارة','٥. الملخص المالي — الميزانية والمصروفات والقطة'].map((item,i) => (
+            <div key={i} className="flex items-center gap-2"><span className="text-emerald-500">✓</span>{item}</div>
           ))}
         </div>
       </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
           { label: 'الترشيحات', value: nominations.length },
           { label: 'الأصوات', value: votes.length },
-          { label: 'المصروفات', value: `${totalExpenses.toLocaleString()} ريال` },
+          { label: 'المصروفات', value: `${totalExpenses.toLocaleString('ar-SA')} ريال` },
           { label: 'المتطوعون', value: willingCount },
-        ].map((m, i) => (
+        ].map((m,i) => (
           <div key={i} className="bg-gray-50 rounded-xl p-3 text-center">
             <div className="text-xl font-bold text-gray-900">{m.value}</div>
             <div className="text-xs text-gray-500 mt-1">{m.label}</div>
           </div>
         ))}
       </div>
-
       {winner && (
         <div className="bg-emerald-500 rounded-xl p-4 text-white text-center mb-5">
           <div className="text-2xl mb-1">🏆</div>
@@ -386,17 +244,11 @@ export default function ReportPage() {
           <div className="text-sm opacity-85">{winner.achievement_field}</div>
         </div>
       )}
-
-      <button
-        onClick={generatePDF}
-        disabled={generating}
+      <button onClick={generatePDF} disabled={generating}
         className="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold text-sm hover:bg-emerald-600 transition disabled:opacity-50 flex items-center justify-center gap-2">
         {generating ? 'جارٍ إنشاء التقرير...' : '📄 استخراج التقرير PDF'}
       </button>
-
-      <p className="text-xs text-gray-400 text-center mt-3">
-        التقرير صادر من مجلس إدارة مبادرة أثر+ إلى أعضاء مجلس الحاج عادل علي حبيب آل قريش
-      </p>
+      <p className="text-xs text-gray-400 text-center mt-3">التقرير صادر من مجلس إدارة مبادرة أثر+ إلى أعضاء مجلس الحاج عادل علي حبيب آل قريش</p>
     </div>
   )
 }
