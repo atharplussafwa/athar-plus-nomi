@@ -24,7 +24,7 @@ export default function NominationsPage() {
     setProfile(p)
     const query = p?.role === 'admin'
       ? supabase.from('nominations').select('*, profiles(name)').order('created_at', { ascending: false })
-      : supabase.from('nominations').select('*, profiles(name)').eq('nominator_id', user.id).order('created_at', { ascending: false })
+      : supabase.from('nominations').select('*, profiles(name)').order('created_at', { ascending: false })
     const { data } = await query
     setNominations(data || [])
 
