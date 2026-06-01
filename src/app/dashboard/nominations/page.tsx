@@ -105,7 +105,7 @@ export default function NominationsPage() {
                 </div>
               )}
               <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                <div className="text-xs text-gray-400">رشّحه: {selectedNom.profiles?.name}</div>
+                
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusMap[selectedNom.status]?.class}`}>
                   {statusMap[selectedNom.status]?.label}
                 </span>
