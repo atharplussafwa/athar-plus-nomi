@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import OnboardingTour from '@/components/OnboardingTour'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -57,6 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [profile, setProfile] = useState<any>(null)
   const [cycleLabel, setCycleLabel] = useState('...')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showTour, setShowTour] = useState(false)
 
   async function loadSettings() {
     const supabase = createClient()
@@ -75,6 +77,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (!user) { router.push('/'); return }
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       setProfile(data)
+      const tourDone = localStorage.getItem('athar_tour_' + data?.id)
+      if (!tourDone) setShowTour(true)
     }
     load()
     loadSettings()
@@ -103,8 +107,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return pathname === `/dashboard${id === 'dashboard' ? '' : '/' + id}`
   }
 
+  function completeTour() {
+    setShowTour(false)
+    if (profile?.id) localStorage.setItem('athar_tour_' + profile.id, 'done')
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50" dir="rtl">
+      {showTour && <OnboardingTour onComplete={completeTour} />}
 
       <div className="hidden md:flex w-56 flex-shrink-0 bg-white border-l border-gray-200 flex-col">
         <div className="p-4 border-b border-gray-200">
