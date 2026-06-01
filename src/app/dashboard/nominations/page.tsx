@@ -202,6 +202,7 @@ export default function NominationsPage() {
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">المرشح/ة</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">المجال</th>
               {profile?.role === 'admin' && <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">المرشِّح</th>}
+              {profile?.role !== 'admin' && <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">المرشِّح</th>}
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">الحالة</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">إجراء</th>
             </tr>
@@ -214,6 +215,7 @@ export default function NominationsPage() {
                 <td className="px-4 py-3 font-semibold text-gray-900">{n.nominee_name}</td>
                 <td className="px-4 py-3 text-gray-600">{n.achievement_field}</td>
                 {profile?.role === 'admin' && <td className="px-4 py-3 text-gray-500">{n.profiles?.name}</td>}
+                {profile?.role !== 'admin' && <td className="px-4 py-3 text-gray-400">—</td>}
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusMap[n.status]?.class}`}>
                     {statusMap[n.status]?.label}
