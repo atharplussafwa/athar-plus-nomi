@@ -40,9 +40,13 @@ export default function VotingPage() {
     setShortlisted(noms || [])
 
     const voterHash = hashVoter(user.id)
+    if (localStorage.getItem('athar_voted_' + voterHash)) setHasVoted(true)
     const { data: existingVote } = await supabase
       .from('honoree_votes').select('*').eq('voter_hash', voterHash).maybeSingle()
-    if (existingVote) setHasVoted(true)
+    if (existingVote) {
+      setHasVoted(true)
+      localStorage.setItem('athar_voted_' + voterHash, 'true')
+    }
 
     if (p?.role === 'admin') {
       const { data: v } = await supabase.from('honoree_votes').select('nomination_id, reason')
@@ -72,9 +76,13 @@ export default function VotingPage() {
     })
 
     if (error) {
-      if (error.code === '23505') setHasVoted(true)
+      if (error.code === '23505') {
+        setHasVoted(true)
+        localStorage.setItem('athar_voted_' + voterHash, 'true')
+      }
     } else {
       setHasVoted(true)
+      localStorage.setItem('athar_voted_' + voterHash, 'true')
     }
     setSubmitting(false)
   }
@@ -162,8 +170,9 @@ export default function VotingPage() {
       ) : hasVoted ? (
         <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
           <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">تم تسجيل تصويتك</h2>
-          <p className="text-sm text-gray-500">شكراً على مشاركتك</p>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">لقد أتممت تصويتك</h2>
+          <p className="text-sm text-gray-500 mb-2">شكراً على مشاركتك في اختيار المكرَّم</p>
+          <p className="text-xs text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full inline-block mt-2">⏳ انتظر النتائج قريباً</p>
         </div>
       ) : (
         <>
