@@ -10,7 +10,7 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editMember, setEditMember] = useState<any>(null)
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'member' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'member', is_committee: false })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -45,7 +45,7 @@ export default function MembersPage() {
       setError(data.error)
     } else {
       setSuccess('تم إضافة العضو بنجاح')
-      setForm({ name: '', email: '', password: '', role: 'member' })
+      setForm({ name: '', email: '', password: '', role: 'member', is_committee: false })
       setShowForm(false)
       setTimeout(() => setSuccess(''), 3000)
       load()
@@ -56,11 +56,33 @@ export default function MembersPage() {
   async function updateMember() {
     if (!editMember) return
     setSubmitting(true)
-    const supabase = createClient()
-    await supabase.from('profiles').update({ name: form.name, role: form.role }).eq('id', editMember.id)
-    setEditMember(null)
-    setShowForm(false)
+    setError('')
+    const res = await fetch('/api/update-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: editMember.id,
+        name: form.name,
+        role: form.role,
+        is_committee: form.is_committee,
+        email: form.email || undefined,
+        password: form.password || undefined,
+      })
+    })
+    const data = await res.json()
+    if (data.error) {
+      setError(data.error)
+    } else {
+      setEditMember(null)
+      setShowForm(false)
+      load()
+    }
     setSubmitting(false)
+  }
+
+  async function toggleCommittee(m: any) {
+    const supabase = createClient()
+    await supabase.from('profiles').update({ is_committee: !m.is_committee }).eq('id', m.id)
     load()
   }
 
@@ -73,14 +95,14 @@ export default function MembersPage() {
 
   function openAdd() {
     setEditMember(null)
-    setForm({ name: '', email: '', password: '', role: 'member' })
+    setForm({ name: '', email: '', password: '', role: 'member', is_committee: false })
     setError('')
     setShowForm(true)
   }
 
   function openEdit(m: any) {
     setEditMember(m)
-    setForm({ name: m.name, email: m.email || '', password: '', role: m.role })
+    setForm({ name: m.name, email: m.email || '', password: '', role: m.role, is_committee: !!m.is_committee })
     setError('')
     setShowForm(true)
   }
@@ -131,20 +153,31 @@ export default function MembersPage() {
               </select>
             </div>
           </div>
-          {!editMember && (
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="email@example.com" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">كلمة المرور</label>
-                <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-                  placeholder="••••••••" />
-              </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">البريد الإلكتروني</label>
+              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                placeholder="email@example.com" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                {editMember ? 'كلمة مرور جديدة (اختياري)' : 'كلمة المرور'}
+              </label>
+              <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                placeholder={editMember ? 'اتركه فارغاً إن لم تريد تغييره' : '••••••••'} />
+            </div>
+          </div>
+          {editMember && (
+            <div className="mb-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={form.is_committee}
+                  onChange={e => setForm({ ...form, is_committee: e.target.checked })}
+                  className="w-4 h-4 accent-emerald-500" />
+                عضو في لجنة مراجعة الترشيحات
+              </label>
+              <p className="text-xs text-gray-400 mt-1 mr-6">يمكنه الوصول لتقرير الترشيحات قبل نقلها للقائمة المختصرة</p>
             </div>
           )}
           {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
@@ -165,6 +198,7 @@ export default function MembersPage() {
             <tr>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">العضو</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">الدور</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">اللجنة</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">تاريخ الانضمام</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500">إجراء</th>
             </tr>
@@ -185,6 +219,13 @@ export default function MembersPage() {
                     ${m.role === 'admin' ? 'bg-emerald-500 text-white' : 'bg-blue-50 text-blue-600'}`}>
                     {m.role === 'admin' ? 'مدير' : 'عضو'}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <button onClick={() => toggleCommittee(m)}
+                    className={`text-xs px-2 py-1 rounded-full font-medium transition
+                      ${m.is_committee ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
+                    {m.is_committee ? '✓ في اللجنة' : 'إضافة للجنة'}
+                  </button>
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs">
                   {new Date(m.created_at).toLocaleDateString('ar-SA')}
